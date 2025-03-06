@@ -1,5 +1,7 @@
 using System.Data;
 using System.Diagnostics;
+using System.Net.Mail;
+using System.Net;
 using AspNetCore.Reporting;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Routing;
@@ -59,8 +61,10 @@ namespace WebApplication4.Controllers
             LocalReport rpt = new LocalReport(path);
             rpt.AddDataSource("DataSet1", dt);
             var result = rpt.Execute(RenderType.Pdf, extention, null, mimietype);
+            //pass report path  and filename 
+            MailSenderr(result.MainStream, "AllEmpoyee");
             return File(result.MainStream, "application/pdf");
-        }
+            }
         private DataTable GetAllEmpolyee()
         {
             var dt = new DataTable();
@@ -87,29 +91,54 @@ namespace WebApplication4.Controllers
         //    course.ForEach(x => dt.Rows.Add(x.COURSE_ID, x.COURSE_NAME));
         //    return dt;  
         //}
-        [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
-        public IActionResult Error()
-        {
-            return View(new ErrorViewModel { RequestId = Activity.Current?.Id ?? HttpContext.TraceIdentifier });
-        }
+      
         public IActionResult List()
         {
             return View();
         }
-        public FileContentResult DownloadReport()
+     
+        private void MailSenderr(byte[] pdfBytes, string filename)
         {
-            //var SDList = _bls.GetScanDoucment();
-            //var Datatable = _bls.ListToDataTable(SDList);
-            var dt = _bls.getdata();
-            string format = "PDF";
-            string extension = "pdf";
-            string contenttype = "application/pdf";
-            var localPath = $"{_Environment.WebRootPath}\\Reports\\Report1.rdlc";
-            var localreport = new LocalReport(localPath);
-            localreport.AddDataSource("ds_Doucment", dt);
 
-            var res = localreport.Execute(RenderType.Pdf, 1, null, contenttype);
-            return File(res.MainStream, contenttype);
+            // Sender email credentials
+            string senderEmail = "tejashinge754@gmail.com";
+            string senderPassword = "oezfvaerysltwdjg";
+
+            // Receiver email
+            string receiverEmail ="hingetejas9@gmail.com";
+
+          
+
+            // Email subject and body
+            string subject = "All Empolyee Details";
+            string body = $"All Empolyee Details with Salary Details";
+
+            try
+            {
+                // Create the MailMessage object
+                MailMessage mail = new MailMessage();
+                mail.From = new MailAddress(senderEmail);
+                mail.To.Add(receiverEmail);
+                mail.Subject = subject;
+                mail.Body = body;
+                
+                using (MemoryStream ms = new MemoryStream(pdfBytes))
+                {
+                    //pass MemoryStream , filename and type 
+                    mail.Attachments.Add(new Attachment(ms,filename,"application/pdf"));
+                    SmtpClient smtp = new SmtpClient("smtp.gmail.com", 587);
+                    smtp.Credentials = new NetworkCredential(senderEmail, senderPassword);
+                    smtp.EnableSsl = true;
+                    smtp.Send(mail);
+                }
+                // Send the email
+              
+            }
+            catch (Exception ex)
+            {
+                Console.WriteLine($"Failed to send OTP: {ex.Message}");
+            }
+           
         }
     }
 }
