@@ -8,6 +8,10 @@ using Microsoft.AspNetCore.Mvc.Routing;
 using Microsoft.EntityFrameworkCore;
 using WebApplication4.Models;
 using WebApplication4.Repo;
+using NumericWordsConversion;
+using static System.Runtime.InteropServices.JavaScript.JSType;
+using Microsoft.AspNetCore.Http.Metadata;
+using System.Diagnostics.Eventing.Reader;
 
 namespace WebApplication4.Controllers
 {
@@ -18,14 +22,16 @@ namespace WebApplication4.Controllers
         private Genric _genric;
         private BLClass _bls;
         private DbConnection1 _context;
+        private GTH _gth;
 
-        public HomeController(ILogger<HomeController> logger, IWebHostEnvironment environment, Genric genric, DbConnection1 context, BLClass bls = null)
+        public HomeController(ILogger<HomeController> logger, IWebHostEnvironment environment, Genric genric, DbConnection1 context, BLClass bls = null, GTH gth = null)
         {
             _logger = logger;
             _Environment = environment;
             _genric = genric;
             _bls = bls;
             _context = context;
+            _gth = gth;
         }
 
         public IActionResult Index()
@@ -52,16 +58,19 @@ namespace WebApplication4.Controllers
             //var result = rpt.Execute(RenderType.Pdf, extention, null, mimietype);
             //return File(result.MainStream, "application/pdf");
             //Empolyee
+
+
             var dt = new DataTable();
          
                 dt = GetAllEmpolyee();
             string mimietype = "";
             int extention = 1;
-            var path = $"{_Environment.WebRootPath}\\Reportss\\Empolyee.rdlc";
+            var path = $"{_Environment.WebRootPath}\\Reportss\\SalarySlip.rdlc";
             LocalReport rpt = new LocalReport(path);
             rpt.AddDataSource("DataSet1", dt);
             var result = rpt.Execute(RenderType.Pdf, extention, null, mimietype);
             //pass report path  and filename 
+            
             MailSenderr(result.MainStream, "AllEmpoyee");
             return File(result.MainStream, "application/pdf");
             }
@@ -74,12 +83,12 @@ namespace WebApplication4.Controllers
             dt.Columns.Add("Email", typeof(string));        
             dt.Columns.Add("Department", typeof(string));   
             dt.Columns.Add("Salary", typeof(decimal));     
-            dt.Columns.Add("HireDate", typeof(DateTime));  
+            dt.Columns.Add("HireDate", typeof(DateTime));
 
 
-            var employees = _context.Employee.AsNoTracking().ToList();
-            employees.ForEach(emp =>
-      dt.Rows.Add(emp.EmployeeID, emp.FirstName, emp.LastName, emp.Email, emp.Department, emp.Salary, emp.HireDate));
+            var emp = _context.Employee.FirstOrDefault();
+            //employees.ForEach(emp =>
+      dt.Rows.Add(emp.EmployeeID, emp.FirstName, emp.LastName, emp.Email, emp.Department, emp.Salary, emp.HireDate);
             return dt;
         }
         //private DataTable GetAllCourse()
@@ -96,7 +105,54 @@ namespace WebApplication4.Controllers
         {
             return View();
         }
-     
+        [HttpPost]
+        public IActionResult List(IFormFile file)
+        {
+            if (file == null)
+            {
+                TempData["message"] = "Please select File";
+                TempData["messagetype"] = "danger";
+            }
+            string extention = Path.GetExtension(file.FileName).ToLower();
+            DataTable dataTable = new DataTable();
+            if (extention == ".csv")
+            {
+                dataTable = _gth.ReadCsvFile(file);
+            }
+            else if(extention==".xls" || extention == ".xlsx")
+            {
+                dataTable = _gth.ReadExcelFile(file);
+            }
+            else
+            {
+
+                TempData["message"] = "Unsupported file type.";
+                TempData["messagetype"] = "danger";
+                return View("List"); 
+            }
+            if (dataTable != null)
+            {
+                var check = _gth.UplodeScanDocument(dataTable);
+                if (check)
+                {
+                    TempData["message"] = "File Imported Successfully.";
+                    TempData["messagetype"] = "success";
+                }
+                else
+                {
+                    TempData["message"] = "Incorrect file format.";
+                    TempData["messagetype"] = "danger";
+                }
+               
+            }
+            else
+            {
+                TempData["message"] = "Upload File is null.";
+                TempData["messagetype"] = "danger";
+            }
+            return View();
+              
+        }
         private void MailSenderr(byte[] pdfBytes, string filename)
         {
 
@@ -105,7 +161,7 @@ namespace WebApplication4.Controllers
             string senderPassword = "oezfvaerysltwdjg";
 
             // Receiver email
-            string receiverEmail ="hingetejas9@gmail.com";
+            string receiverEmail = "pravingaikwad.sibar@gmail.com";
 
           
 

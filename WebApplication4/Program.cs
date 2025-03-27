@@ -21,6 +21,7 @@ namespace WebApplication4
 
             builder.Services.AddSingleton<Genric>();
             builder.Services.AddTransient<BLClass>();
+            builder.Services.AddSingleton<GTH>();   
          
 
             var app = builder.Build();

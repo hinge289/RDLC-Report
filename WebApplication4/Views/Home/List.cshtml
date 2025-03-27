@@ -3,4 +3,13 @@
 *@
 @{
 }
+@model Input
+
 <a href="Home/Print">Download</ahref>
+    <form asp-action="List" method="post" enctype="multipart/form-data">
+        <input id="file" class="file-upload" type="file" accept=".jpg,.jpeg,.png" asp-for="File" onchange="previewImage(event) " data-fileuploaded="0" data-val="true" />
+        <span asp-validation-for="File" class="text-danger"></span>
+        <br />
+        <input type="submit" />
+</form>
+

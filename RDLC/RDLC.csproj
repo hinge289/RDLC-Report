@@ -9,6 +9,10 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <PackageReference Include="NumericWordsConversion" Version="2.1.1" />
+  </ItemGroup>
+
+  <ItemGroup>
     <Compile Update="DataSet1.Designer.cs">
       <DesignTime>True</DesignTime>
       <AutoGen>True</AutoGen>
